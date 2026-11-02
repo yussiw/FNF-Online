@@ -1,0 +1,62 @@
+name: Android Build
+
+on:
+push:
+branches: [main, master]
+paths:
+- 'fnf-online.zip'
+workflow_dispatch:
+
+jobs:
+build:
+if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.added, 'fnf-online.zip')
+runs-on: ubuntu-22.04
+
+steps:  
+  - uses: actions/checkout@v4  
+
+  - name: Extract FNF Online  
+    run: |  
+      unzip -o fnf-online.zip -d .  
+      rm fnf-online.zip  
+
+  - uses: actions/setup-java@v4  
+    with:  
+      distribution: zulu  
+      java-version: 11  
+
+  - uses: krdlab/setup-haxe@v1  
+    with:  
+      haxe-version: 4.3.6  
+
+  - name: Install Android NDK r21e  
+    uses: nttld/setup-ndk@v1  
+    id: setup-ndk  
+    with:  
+      ndk-version: r21e  
+
+  - name: Install Haxe libs  
+    run: |  
+      haxelib setup ~/haxelib  
+      haxelib --always install hxcpp 4.3.2  
+      haxelib --always install lime 8.1.2  
+      haxelib --always install openfl 9.3.3  
+      haxelib --always install flixel 5.6.1  
+      haxelib --always install haxe-ws  
+      haxelib list  
+
+  - name: Configure Lime for Android  
+    run: |  
+      haxelib run lime config ANDROID_SDK $ANDROID_HOME  
+      haxelib run lime config ANDROID_NDK_ROOT ${{ steps.setup-ndk.outputs.ndk-path }}  
+      haxelib run lime config JAVA_HOME $JAVA_HOME  
+      haxelib run lime config ANDROID_SETUP true  
+
+  - name: Build APK  
+    run: haxelib run lime build android -nocolor  
+
+  - uses: actions/upload-artifact@v4  
+    with:  
+      name: FNFOnline-apk  
+      path: export/**/*.apk  
+      if-no-files-found: error
