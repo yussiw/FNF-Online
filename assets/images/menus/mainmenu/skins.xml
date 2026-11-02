@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="skins.png">
+    <SubTexture name="skins selected0" x="1" y="1" width="476" height="182" frameX="0" frameY="0" frameWidth="476" frameHeight="182"/>
+    <SubTexture name="skins selected1" x="1" y="185" width="476" height="182" frameX="0" frameY="0" frameWidth="476" frameHeight="182"/>
+    <SubTexture name="skins selected2" x="1" y="369" width="476" height="182" frameX="0" frameY="0" frameWidth="476" frameHeight="182"/>
+    <SubTexture name="skins0" x="1" y="553" width="476" height="182" frameX="0" frameY="0" frameWidth="476" frameHeight="182"/>
+    <SubTexture name="skins1" x="1" y="737" width="476" height="182" frameX="0" frameY="0" frameWidth="476" frameHeight="182"/>
+    <SubTexture name="skins2" x="1" y="921" width="476" height="182" frameX="0" frameY="0" frameWidth="476" frameHeight="182"/>
+</TextureAtlas>
