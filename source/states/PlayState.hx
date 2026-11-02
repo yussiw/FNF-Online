@@ -15,6 +15,7 @@ import flixel.input.keyboard.FlxKey;
 import flixel.math.FlxMath;
 import flixel.sound.FlxSound;
 import flixel.text.FlxText;
+import flixel.util.FlxColor;
 import net.Net;
 import objects.Character;
 import objects.Note;
@@ -49,6 +50,9 @@ class PlayState extends FlxState
 	static inline var ME_X:Float = 1000;
 	static inline var CAM_Y:Float = 470;
 	static inline var BASE_ZOOM:Float = 0.9;
+
+	static inline var HEALTH_BAR_WIDTH:Float = 600;
+	static inline var HEALTH_BAR_HEIGHT:Float = 20;
 
 	var colW:Float;
 
@@ -90,8 +94,18 @@ class PlayState extends FlxState
 	var oppScore:Int = 0;
 	var oppGone:Bool = false;
 
-	var hud:FlxText;
+	var health:Float = 1.0;
+
+	var healthBarBG:FlxSprite;
+	var healthBarOpponent:FlxSprite;
+	var healthBarPlayer:FlxSprite;
+
+	var playerAvatar:FlxText;
+	var opponentAvatar:FlxText;
+
+	var scoreText:FlxText;
 	var oppHud:FlxText;
+
 	var judgeText:FlxText;
 	var countText:FlxText;
 	var banner:FlxText;
@@ -100,7 +114,13 @@ class PlayState extends FlxState
 
 	static var DIRS:Array<String> = ["LEFT", "DOWN", "UP", "RIGHT"];
 	static var JUDGE:Array<String> = ["SICK!!", "GOOD", "BAD", "SHIT", "MISS"];
-	static var JCOLOR:Array<Int> = [0xFF66CCFF, 0xFF66FF66, 0xFFFFCC33, 0xFFFF6644, 0xFFFF3333];
+	static var JCOLOR:Array<Int> = [
+		0xFF66CCFF,
+		0xFF66FF66,
+		0xFFFFCC33,
+		0xFFFF6644,
+		0xFFFF3333
+	];
 	static var JSCORE:Array<Int> = [350, 200, 100, 50];
 	static var JACC:Array<Float> = [1, 0.75, 0.5, 0.25];
 
@@ -157,11 +177,11 @@ class PlayState extends FlxState
 
 		noteFrames = Paths.atlas("game/notes/default");
 
-		var noteW = 157 * NOTE_SCALE;
-
 		for (i in 0...4)
 		{
-			var g = new FlxSprite(i * colW, 0).makeGraphic(Std.int(colW), FlxG.height, 0xFFFFFFFF);
+			var g = new FlxSprite(i * colW, 0)
+				.makeGraphic(Std.int(colW), FlxG.height, 0xFFFFFFFF);
+
 			g.alpha = 0;
 			glow.push(g);
 			hudAdd(g);
@@ -184,8 +204,7 @@ class PlayState extends FlxState
 		hudAdd(sustainGroup);
 		hudAdd(noteGroup);
 
-		hud = Ui.text(0, FlxG.height - 30, FlxG.width, "", 28, FlxTextAlign.CENTER);
-		hudAdd(hud);
+		createHealthHUD();
 
 		oppHud = Ui.text(20, 62, 400, "", 26);
 		hudAdd(oppHud);
@@ -226,6 +245,97 @@ class PlayState extends FlxState
 		}
 
 		updateHud();
+	}
+
+	function createHealthHUD():Void
+	{
+		var barX = (FlxG.width - HEALTH_BAR_WIDTH) / 2;
+		var barY = FlxG.height - 78;
+
+		healthBarBG = new FlxSprite(barX - 4, barY - 4)
+			.makeGraphic(
+				Std.int(HEALTH_BAR_WIDTH + 8),
+				Std.int(HEALTH_BAR_HEIGHT + 8),
+				FlxColor.BLACK
+			);
+
+		healthBarOpponent = new FlxSprite(barX, barY)
+			.makeGraphic(
+				Std.int(HEALTH_BAR_WIDTH),
+				Std.int(HEALTH_BAR_HEIGHT),
+				0xFFCC3333
+			);
+
+		healthBarPlayer = new FlxSprite(barX + HEALTH_BAR_WIDTH / 2, barY)
+			.makeGraphic(
+				Std.int(HEALTH_BAR_WIDTH / 2),
+				Std.int(HEALTH_BAR_HEIGHT),
+				0xFF66FF33
+			);
+
+		playerAvatar = Ui.text(
+			barX + HEALTH_BAR_WIDTH + 8,
+			barY - 22,
+			52,
+			"BF",
+			34,
+			FlxTextAlign.CENTER,
+			FlxColor.WHITE
+		);
+
+		opponentAvatar = Ui.text(
+			barX - 60,
+			barY - 22,
+			52,
+			"DAD",
+			30,
+			FlxTextAlign.CENTER,
+			FlxColor.WHITE
+		);
+
+		scoreText = Ui.text(
+			0,
+			FlxG.height - 42,
+			FlxG.width,
+			"",
+			25,
+			FlxTextAlign.CENTER
+		);
+
+		hudAdd(healthBarBG);
+		hudAdd(healthBarOpponent);
+		hudAdd(healthBarPlayer);
+		hudAdd(opponentAvatar);
+		hudAdd(playerAvatar);
+		hudAdd(scoreText);
+	}
+
+	function updateHealthHUD():Void
+	{
+		health = Math.max(0, Math.min(2, health));
+
+		var width = HEALTH_BAR_WIDTH * (health / 2);
+
+		healthBarPlayer.setGraphicSize(
+			Std.int(width),
+			Std.int(HEALTH_BAR_HEIGHT)
+		);
+
+		healthBarPlayer.updateHitbox();
+
+		healthBarPlayer.x =
+			healthBarBG.x + 4 + HEALTH_BAR_WIDTH - width;
+
+		var acc = judged > 0
+			? Math.round(accPts / judged * 1000) / 10
+			: 100;
+
+		scoreText.text =
+			"Score: " + score +
+			"    Misses: " + misses +
+			"    Accuracy: " + acc + "%";
+
+		opponentAvatar.text = online ? "OPP" : "DAD";
 	}
 
 	inline function laneX(lane:Int):Float
@@ -340,10 +450,8 @@ class PlayState extends FlxState
 
 	function updateHud():Void
 	{
-		var acc = judged > 0 ? Math.round(accPts / judged * 1000) / 10 : 100;
-
-		hud.text = "Score: " + score + "  |  Combo: " + combo + "  |  Accuracy: " + acc + "%  |  Misses: " + misses;
 		oppHud.text = online ? oppName + ": " + oppScore : "";
+		updateHealthHUD();
 	}
 
 	function spawnNotes():Void
@@ -504,6 +612,8 @@ class PlayState extends FlxState
 		judged++;
 		combo++;
 
+		health = Math.min(2, health + 0.023);
+
 		strums[n.lane].play("confirm");
 		me.playAnim("sing" + DIRS[n.lane]);
 
@@ -531,6 +641,8 @@ class PlayState extends FlxState
 		misses++;
 		judged++;
 		score -= 10;
+
+		health = Math.max(0, health - 0.047);
 
 		me.playAnim("sing" + DIRS[n.lane] + "miss");
 
